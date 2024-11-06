@@ -32,8 +32,10 @@ type DynamicWorkerPool struct {
 }
 
 func (dwp *DynamicWorkerPool) StartWorker() {
+	dwp.mu.Lock()
 	dwp.curWorkerCount++
 	dwp.availableWorkers++
+	dwp.mu.Unlock()
 	for {
 		select {
 		case <-dwp.del:
