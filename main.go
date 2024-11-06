@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 )
 
 type Task struct {
@@ -122,6 +123,7 @@ func (dwp *DynamicWorkerPool) AddTask(value interface{}) error {
 
 	for dwp.availableWorkers == 0 {
 		// ожидание доступных воркеров
+		time.Sleep(time.Millisecond * 10)
 	}
 
 	dwp.wg.Add(1)
