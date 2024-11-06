@@ -55,14 +55,14 @@ func (dwp *DynamicWorkerPool) StartWorker() {
 			dwp.mu.Lock()
 			dwp.availableWorkers--
 			dwp.mu.Unlock()
-			
+
 			// time.Sleep(1 * time.Second)
 			fmt.Printf("[task %d] %s\n", task.id, task.value)
-			
+
 			dwp.mu.Lock()
 			dwp.availableWorkers++
-			dpw.mu.Unlock()
-			
+			dwp.mu.Unlock()
+
 			dwp.wg.Done()
 			fmt.Printf("\t[task %d] Done!\n", task.id)
 		}
@@ -78,7 +78,6 @@ func (dwp *DynamicWorkerPool) CreateWorker(n int) error {
 	// валидация параметров
 	maxCreate := dwp.maxWorkerCount - dwp.curWorkerCount
 	n = min(n, maxCreate)
-	waitWorkerCount := dwp.curWorkerCount + n
 
 	// запуск (создание) воркеров
 	for i := 0; i < n; i++ {
@@ -101,7 +100,6 @@ func (dwp *DynamicWorkerPool) DeleteWorker(n int) error {
 	// валидация параметров
 	maxDelete := dwp.curWorkerCount
 	n = min(n, maxDelete)
-	waitWorkerCount := dwp.curWorkerCount - n
 
 	// остановка (удаление) воркеров
 	for i := 0; i < n; i++ {
