@@ -71,7 +71,7 @@ func (dwp *DynamicWorkerPool) StartWorker() {
 }
 
 // Создает заданное кол-во воркеров (возможно меньше, если значение больше максимума)
-func (dwp *DynamicWorkerPool) CreateWorker(n int) error {
+func (dwp *DynamicWorkerPool) CreateWorkers(n int) error {
 	if n < 0 {
 		return fmt.Errorf("cant create negative count of workers!")
 	}
@@ -93,7 +93,7 @@ func (dwp *DynamicWorkerPool) CreateWorker(n int) error {
 	return nil
 }
 
-func (dwp *DynamicWorkerPool) DeleteWorker(n int) error {
+func (dwp *DynamicWorkerPool) DeleteWorkers(n int) error {
 	if n < 0 {
 		return fmt.Errorf("cant delete negative count of workers!")
 	}
@@ -156,7 +156,7 @@ func NewDynamicWorkPool(n int) DynamicWorkerPool {
 // Остановить DWP
 func (dwp *DynamicWorkerPool) Stop() {
 	dwp.wg.Wait()
-	dwp.DeleteWorker(dwp.maxWorkerCount)
+	dwp.DeleteWorkers(dwp.maxWorkerCount)
 	close(dwp.in)
 	close(dwp.out)
 	close(dwp.del)
@@ -165,12 +165,12 @@ func (dwp *DynamicWorkerPool) Stop() {
 func main() {
 	dwp := NewDynamicWorkPool(100)
 
-	err := dwp.CreateWorker(6)
+	err := dwp.CreateWorkers(6)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = dwp.DeleteWorker(3)
+	err = dwp.DeleteWorkers(3)
 	if err != nil {
 		log.Fatal(err)
 	}
