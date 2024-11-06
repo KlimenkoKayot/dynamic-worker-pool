@@ -53,13 +53,16 @@ func (dwp *DynamicWorkerPool) StartWorker() {
 			return
 		case task := <-dwp.in:
 			dwp.mu.Lock()
-			
 			dwp.availableWorkers--
+			dwp.mu.Unlock()
+			
 			// time.Sleep(1 * time.Second)
 			fmt.Printf("[task %d] %s\n", task.id, task.value)
-			dwp.availableWorkers++
 			
+			dwp.mu.Lock()
+			dwp.availableWorkers++
 			dpw.mu.Unlock()
+			
 			dwp.wg.Done()
 			fmt.Printf("\t[task %d] Done!\n", task.id)
 		}
