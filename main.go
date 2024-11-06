@@ -25,6 +25,9 @@ type DynamicWorkerPool struct {
 	mu *sync.Mutex
 	wg *sync.WaitGroup
 
+	createWg *sync.WaitGroup
+	deleteWg *sync.WaitGroup
+
 	curWorkerCount   int
 	availableWorkers int
 	maxWorkerCount   int
@@ -35,6 +38,8 @@ func (dwp *DynamicWorkerPool) StartWorker() {
 	dwp.mu.Lock()
 	dwp.curWorkerCount++
 	dwp.availableWorkers++
+	// воркер создан
+	dwp.createWg.Done()
 	dwp.mu.Unlock()
 	for {
 		select {
@@ -42,15 +47,19 @@ func (dwp *DynamicWorkerPool) StartWorker() {
 			dwp.mu.Lock()
 			dwp.curWorkerCount--
 			dwp.availableWorkers--
+			// воркер удален
+			dwp.deleteWg.Done()
 			dwp.mu.Unlock()
 			return
 		case task := <-dwp.in:
+			dwp.mu.Lock()
+			
 			dwp.availableWorkers--
-
 			// time.Sleep(1 * time.Second)
 			fmt.Printf("[task %d] %s\n", task.id, task.value)
-
 			dwp.availableWorkers++
+			
+			dpw.mu.Unlock()
 			dwp.wg.Done()
 			fmt.Printf("\t[task %d] Done!\n", task.id)
 		}
@@ -70,13 +79,12 @@ func (dwp *DynamicWorkerPool) CreateWorker(n int) error {
 
 	// запуск (создание) воркеров
 	for i := 0; i < n; i++ {
+		dwp.createWg.Add(1)
 		go dwp.StartWorker()
 	}
 
 	// ожидание создания воркеров
-	for dwp.curWorkerCount != waitWorkerCount {
-		// (если этого не делать, то могут возникнуть ошибки)
-	}
+	dwp.createWg.Wait()
 
 	fmt.Printf("\t[%d/%d] Created %d workers...\n", dwp.curWorkerCount, dwp.maxWorkerCount, n)
 	return nil
@@ -94,13 +102,12 @@ func (dwp *DynamicWorkerPool) DeleteWorker(n int) error {
 
 	// остановка (удаление) воркеров
 	for i := 0; i < n; i++ {
+		dwp.deleteWg.Add(1)
 		dwp.del <- struct{}{}
 	}
 
 	// ожидание удаления воркеров
-	for dwp.curWorkerCount != waitWorkerCount {
-		// (если этого не делать, то могут возникнуть ошибки)
-	}
+	dwp.deleteWg.Wait()
 
 	fmt.Printf("\t[%d/%d] Deleted %d workers...\n", dwp.curWorkerCount, dwp.maxWorkerCount, n)
 	return nil
@@ -132,6 +139,9 @@ func NewDynamicWorkPool(n int) DynamicWorkerPool {
 		out: make(chan Result),
 
 		del: make(chan interface{}),
+
+		createWg: &sync.WaitGroup{},
+		deleteWg: &sync.WaitGroup{},
 
 		mu: &sync.Mutex{},
 		wg: &sync.WaitGroup{},
